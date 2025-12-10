@@ -1,78 +1,104 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+"use client";
+import { useState, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid"; // npm install uuid
 
 export default function Home() {
+  const [name, setName] = useState("");
+  const [list, setList] = useState([]);
+
+  // Load saved people
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem("names")) || [];
+    setList(saved);
+  }, []);
+
+  const saveToLocalStorage = (data) => {
+    localStorage.setItem("names", JSON.stringify(data));
+  };
+
+  // Add new person
+  const addName = () => {
+    if (!name.trim()) return;
+
+    const updated = [...list, { id: uuidv4(), name }];
+    setList(updated);
+    saveToLocalStorage(updated);
+    setName("");
+  };
+
+
+  const editName = (i) => {
+    const newName = prompt("Enter new name", list[i].name);
+    if (!newName) return;
+
+    const updated = [...list];
+    updated[i].name = newName;
+    setList(updated);
+    saveToLocalStorage(updated);
+  };
+
+  const goToAssign = (i) => {
+    localStorage.setItem("currentPerson", JSON.stringify(list[i]));
+    window.location.href = "/tasks";
+  };
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black`}
-    >
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="max-w-xl mx-auto px-4 py-6">
+      <h1 className="text-3xl font-semibold text-center mb-6">Manage People</h1>
+
+      <div className="flex gap-2 mb-6">
+        <input
+          className="border p-3 rounded w-full shadow-sm"
+          placeholder="Enter Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the index.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+        <button
+          onClick={addName}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded"
+        >
+          Add
+        </button>
+      </div>
+
+   
+      <div className="space-y-4">
+        {list.map((item, i) => {
+          // Get tasks count for this person
+          const tasks = JSON.parse(localStorage.getItem("tasks_" + item.id)) || [];
+          return (
+            <div
+              key={i}
+              className="border rounded p-4 flex items-center justify-between shadow-sm bg-white"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs/pages/getting-started?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+              <div>
+                <p className="text-lg font-medium">{item.name}</p>
+                <p className="text-gray-600 text-sm">{tasks.length} tasks</p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => editName(i)}
+                  className="text-blue-600 hover:underline"
+                >
+                  Edit
+                </button>
+
+                <button
+                  onClick={() => goToAssign(i)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                >
+                  Assign Task
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+        {list.length === 0 && (
+          <p className="text-center text-gray-500">No names added yet.</p>
+        )}
+      </div>
     </div>
   );
 }
