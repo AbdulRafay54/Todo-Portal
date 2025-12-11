@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { CircularProgressbar } from "react-circular-progressbar";
 
 export default function TaskPage() {
   const [person, setPerson] = useState(null);
@@ -18,7 +19,8 @@ export default function TaskPage() {
     }
   }, []);
 
-  const saveTasks = (data) => localStorage.setItem("tasks_" + person.id, JSON.stringify(data));
+  const saveTasks = (data) =>
+    localStorage.setItem("tasks_" + person.id, JSON.stringify(data));
 
   const addTask = () => {
     const pin = prompt("Enter Admin PIN to add task:");
@@ -66,7 +68,8 @@ export default function TaskPage() {
     alert("Task deleted successfully.");
   };
 
-  const isExpired = (task) => new Date(task.deadline) < new Date() && !task.completed;
+  const isExpired = (task) =>
+    new Date(task.deadline) < new Date() && !task.completed;
 
   const progressPercent = () => {
     if (tasks.length === 0) return 0;
@@ -109,15 +112,15 @@ export default function TaskPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="bg-white p-4 rounded-xl shadow">
-        <p className="font-medium mb-1">Progress</p>
-        <div className="w-full bg-gray-200 h-5 rounded">
-          <div
-            className="bg-green-600 h-5 rounded"
-            style={{ width: `${progressPercent()}%` }}
-          ></div>
+      {/* Circular Progress Chart */}
+      <div className="bg-white p-4 rounded-xl shadow flex flex-col items-center">
+        <p className="font-medium mb-2">Progress</p>
+        <div className="w-32 h-32">
+          <CircularProgressbar
+            value={progressPercent()}
+            text={`${progressPercent()}%`}
+          />
         </div>
-        <p className="text-sm mt-1">{progressPercent()}% completed</p>
       </div>
 
       {/* Task List */}
@@ -151,7 +154,9 @@ export default function TaskPage() {
           </div>
         ))}
 
-        {tasks.length === 0 && <p className="text-center text-gray-500">No tasks yet.</p>}
+        {tasks.length === 0 && (
+          <p className="text-center text-gray-500">No tasks yet.</p>
+        )}
       </div>
     </div>
   );
