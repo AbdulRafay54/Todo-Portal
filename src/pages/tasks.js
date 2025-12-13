@@ -111,7 +111,7 @@ export default function TaskPage() {
         </button>
       </div>
 
-      {/* Progress Bar */}
+ 
       {/* Circular Progress Chart */}
       <div className="bg-white p-4 rounded-xl shadow flex flex-col items-center">
         <p className="font-medium mb-2">Progress</p>
