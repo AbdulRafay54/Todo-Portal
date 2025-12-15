@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import { CircularProgressbar } from "react-circular-progressbar";
+import "react-circular-progressbar/dist/styles.css";
 
 export default function TaskPage() {
   const [person, setPerson] = useState(null);
   const [taskName, setTaskName] = useState("");
-  const [deadlineDate, setDeadlineDate] = useState("");
-  const [deadlineTime, setDeadlineTime] = useState("");
+  const [submissionDate, setSubmissionDate] = useState("");
   const [tasks, setTasks] = useState([]);
   const adminPin = "1234";
 
@@ -28,13 +28,14 @@ export default function TaskPage() {
       alert("Incorrect PIN. Only admin can add tasks.");
       return;
     }
-    if (!taskName || !deadlineDate || !deadlineTime) return;
+    if (!taskName || !submissionDate) return alert("Please enter task name and submission date.");
 
+    const today = new Date().toLocaleDateString();
     const newTask = {
       id: Date.now(),
       name: taskName,
-      createdOn: new Date().toLocaleString(),
-      deadline: `${deadlineDate} ${deadlineTime}`,
+      assignedOn: today,
+      submissionDate: submissionDate,
       completed: false,
     };
 
@@ -43,8 +44,7 @@ export default function TaskPage() {
     saveTasks(updated);
 
     setTaskName("");
-    setDeadlineDate("");
-    setDeadlineTime("");
+    setSubmissionDate("");
     alert("Task added successfully by Admin.");
   };
 
@@ -68,8 +68,11 @@ export default function TaskPage() {
     alert("Task deleted successfully.");
   };
 
-  const isExpired = (task) =>
-    new Date(task.deadline) < new Date() && !task.completed;
+  const isExpired = (task) => {
+    const today = new Date();
+    const deadline = new Date(task.submissionDate + "T23:59:59");
+    return !task.completed && today > deadline;
+  };
 
   const progressPercent = () => {
     if (tasks.length === 0) return 0;
@@ -94,14 +97,8 @@ export default function TaskPage() {
         <input
           type="date"
           className="w-full p-2 border rounded"
-          value={deadlineDate}
-          onChange={(e) => setDeadlineDate(e.target.value)}
-        />
-        <input
-          type="time"
-          className="w-full p-2 border rounded"
-          value={deadlineTime}
-          onChange={(e) => setDeadlineTime(e.target.value)}
+          value={submissionDate}
+          onChange={(e) => setSubmissionDate(e.target.value)}
         />
         <button
           onClick={addTask}
@@ -111,7 +108,6 @@ export default function TaskPage() {
         </button>
       </div>
 
- 
       {/* Circular Progress Chart */}
       <div className="bg-white p-4 rounded-xl shadow flex flex-col items-center">
         <p className="font-medium mb-2">Progress</p>
@@ -128,8 +124,8 @@ export default function TaskPage() {
         {tasks.map((t) => (
           <div key={t.id} className="bg-white p-4 rounded-xl shadow">
             <p className="text-lg font-semibold">{t.name}</p>
-            <p className="text-sm text-gray-500">Created: {t.createdOn}</p>
-            <p className="text-sm text-gray-500">Deadline: {t.deadline}</p>
+            <p className="text-sm text-gray-500">Assigned on: {t.assignedOn}</p>
+            <p className="text-sm text-gray-500">Submission date: {t.submissionDate}</p>
 
             {isExpired(t) && !t.completed && (
               <p className="text-red-600 font-medium mt-1">Deadline missed!</p>
