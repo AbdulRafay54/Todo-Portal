@@ -1,49 +1,87 @@
 "use client";
 import { useState, useEffect } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { FiEdit, FiTrash2 } from "react-icons/fi";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [name, setName] = useState("");
   const [list, setList] = useState([]);
   const adminPin = "1234";
+  const router = useRouter();
 
+  // LOAD PEOPLE FROM FIREBASE
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("names")) || [];
-    setList(saved);
+    const loadPeople = async () => {
+      const snapshot = await getDocs(collection(db, "people"));
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      setList(data);
+    };
+    loadPeople();
   }, []);
 
-  const saveLocal = (data) => localStorage.setItem("names", JSON.stringify(data));
-
-  const addName = () => {
+  // ADD PERSON
+  const addName = async () => {
+    const pin = prompt("Enter Admin PIN");
+    if (pin !== adminPin) {
+      alert("Access denied. Admin only.");
+      return;
+    }
     if (!name.trim()) return;
-    const updated = [...list, { id: uuidv4(), name }];
-    setList(updated);
-    saveLocal(updated);
+
+    const docRef = await addDoc(collection(db, "people"), {
+      name,
+      createdAt: new Date(),
+    });
+
+    setList([...list, { id: docRef.id, name }]);
     setName("");
   };
 
-  const editName = (id) => {
-    const newName = prompt("Enter new name:");
+  // EDIT PERSON
+  const editName = async (id, oldName) => {
+    const pin = prompt("Enter Admin PIN");
+    if (pin !== adminPin) {
+      alert("Access denied. Admin only.");
+      return;
+    }
+
+    const newName = prompt("Enter new name", oldName);
     if (!newName) return;
-    const updated = list.map((p) => (p.id === id ? { ...p, name: newName } : p));
-    setList(updated);
-    saveLocal(updated);
+
+    await updateDoc(doc(db, "people", id), { name: newName });
+
+    setList(
+      list.map((p) => (p.id === id ? { ...p, name: newName } : p))
+    );
   };
 
-  const deletePerson = (id) => {
-    const pin = prompt("Enter admin PIN to delete:");
-    if (pin !== adminPin) return alert("Wrong PIN. Only admin can delete.");
-    const updated = list.filter((p) => p.id !== id);
-    setList(updated);
-    saveLocal(updated);
-   
-    localStorage.removeItem("tasks_" + id);
+  // DELETE PERSON
+  const deletePerson = async (id) => {
+    const pin = prompt("Enter Admin PIN");
+    if (pin !== adminPin) {
+      alert("Access denied. Admin only.");
+      return;
+    }
+
+    await deleteDoc(doc(db, "people", id));
+    setList(list.filter((p) => p.id !== id));
   };
 
-  const openTasks = (person) => {
-    localStorage.setItem("currentPerson", JSON.stringify(person));
-    window.location.href = "/tasks";
+  // OPEN TASK PAGE
+  const openTasks = (personId) => {
+    router.push(`/tasks?personId=${personId}`);
   };
 
   return (
@@ -60,41 +98,42 @@ export default function Home() {
           />
           <button
             onClick={addName}
-            className="bg-blue-600 text-white px-4 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 rounded"
           >
             Add
           </button>
         </div>
 
         <div className="space-y-3">
-          {list.map((item) => {
-            
-            const tasks = JSON.parse(localStorage.getItem("tasks_" + item.id)) || [];
-            return (
-              <div
-                key={item.id}
-                className="p-4 bg-white rounded shadow flex justify-between items-center hover:bg-gray-50 cursor-pointer"
-                onClick={() => openTasks(item)}
-              >
-                <div>
-                  <p className="text-lg font-medium">{item.name}</p>
-                  <p className="text-sm text-gray-500">{tasks.length} task(s) assigned</p>
-                </div>
-                <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                  <FiEdit
-                    className="text-blue-600 text-xl cursor-pointer"
-                    onClick={() => editName(item.id)}
-                  />
-                  <FiTrash2
-                    className="text-red-600 text-xl cursor-pointer"
-                    onClick={() => deletePerson(item.id)}
-                  />
-                </div>
-              </div>
-            );
-          })}
+          {list.map((item) => (
+            <div
+              key={item.id}
+              className="p-4 bg-white rounded shadow flex justify-between items-center hover:bg-gray-50 cursor-pointer"
+              onClick={() => openTasks(item.id)}
+            >
+              <p className="text-lg font-medium">{item.name}</p>
 
-          {list.length === 0 && <p className="text-center text-gray-500">No names added yet.</p>}
+              <div
+                className="flex items-center gap-3"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <FiEdit
+                  className="text-blue-600 text-xl cursor-pointer"
+                  onClick={() => editName(item.id, item.name)}
+                />
+                <FiTrash2
+                  className="text-red-600 text-xl cursor-pointer"
+                  onClick={() => deletePerson(item.id)}
+                />
+              </div>
+            </div>
+          ))}
+
+          {list.length === 0 && (
+            <p className="text-center text-gray-500">
+              No people added yet.
+            </p>
+          )}
         </div>
       </div>
     </div>
